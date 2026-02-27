@@ -1,14 +1,24 @@
 {
-  "name": "Plans Anciens de Paris",
-  "short_name": "Paris Ancien",
-  "description": "Explorez 650 plans historiques de Paris de 1800 à 1900",
+  "name": "Plans de la Ville de Paris",
+  "short_name": "Plans Paris",
+  "description": "Explorez les plans historiques de Paris de 1800 à 1900",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#1a1008",
-  "theme_color": "#c8a96e",
+  "background_color": "#564c4c",
+  "theme_color": "#564c4c",
   "lang": "fr",
   "icons": [
+    {
+      "src": "icons/favicon-16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
@@ -20,8 +30,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
     }
   ],
-  "categories": ["education", "travel", "history"],
-  "screenshots": []
+  "categories": ["education", "travel", "history"]
 }
