@@ -172,54 +172,73 @@
       to   { transform: translateY(0);    opacity: 1; }
     }
 
-    /* Slider de transparence VERTICAL */
-    .opacity-slider {
-      writing-mode: vertical-lr;
-      direction: rtl;        /* haut = 100 (opaque), bas = 0 (transparent) */
+
+    /* Slider de transparence VERTICAL — via rotate (fiable sur tous navigateurs) */
+    #slider-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .slider-wrap {
+      /* Conteneur qui définit la hauteur visuelle du slider */
       width: 22px;
-      height: 90px;
-      cursor: pointer;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+    }
+
+    .opacity-slider {
+      /* Slider horizontal pivoté — haut=100% opaque, bas=0% transparent */
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100px;       /* la longueur du slider = la hauteur visuelle */
+      height: 4px;
+      transform: rotate(-90deg);
+      transform-origin: center center;
+      background: linear-gradient(
+        to right,
+        var(--gold) 0%,
+        var(--gold) var(--pct, 100%),
+        rgba(200,169,110,0.2) var(--pct, 100%)
+      );
+      border-radius: 2px;
       outline: none;
-      background: transparent;
+      cursor: pointer;
       flex-shrink: 0;
-      padding: 0;
-    }
-
-    /* Track vertical */
-    .opacity-slider::-webkit-slider-runnable-track {
-      width: 4px;
-      border-radius: 2px;
-      background: rgba(200,169,110,0.25);
-    }
-
-    .opacity-slider::-moz-range-track {
-      width: 4px;
-      border-radius: 2px;
-      background: rgba(200,169,110,0.25);
     }
 
     .opacity-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 18px; height: 18px;
+      width: 20px; height: 20px;
       border-radius: 50%;
       background: var(--gold);
       border: 2px solid var(--sepia);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.7);
       cursor: pointer;
       transition: transform 0.15s;
     }
 
-    .opacity-slider::-webkit-slider-thumb:active { transform: scale(1.25); }
+    .opacity-slider::-webkit-slider-thumb:active { transform: scale(1.3); }
 
     .opacity-slider::-moz-range-thumb {
-      width: 18px; height: 18px;
+      width: 20px; height: 20px;
       border-radius: 50%;
       background: var(--gold);
       border: 2px solid var(--sepia);
       cursor: pointer;
     }
 
-    /* Layout panneau contrôles : slider vertical à gauche, toggles à droite */
+    .opacity-slider::-moz-range-track {
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(200,169,110,0.2);
+    }
+
+    /* Layout panneau contrôles */
     #plan-controls {
       position: absolute;
       bottom: 134px; right: 12px;
@@ -227,7 +246,7 @@
       background: var(--panel-bg);
       border: 1px solid var(--panel-border);
       border-radius: var(--radius);
-      padding: 10px 12px;
+      padding: 12px 14px;
       backdrop-filter: blur(12px);
       display: none;
       width: auto;
@@ -237,29 +256,23 @@
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: 12px;
-    }
-
-    #slider-col {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
+      gap: 14px;
     }
 
     #toggles-col {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
     .slider-end-label {
       font-size: 9px;
-      color: rgba(200,169,110,0.5);
-      font-style: italic;
+      color: rgba(200,169,110,0.6);
       text-align: center;
       line-height: 1;
+      user-select: none;
     }
+
 
     /* Toggles couches */
     .layer-toggle {
@@ -658,9 +671,10 @@
     <!-- Slider vertical : haut = opaque, bas = transparent -->
     <div id="slider-col">
       <span class="slider-end-label">●</span>
-      <input type="range" class="opacity-slider" id="opacity-slider"
-             style="writing-mode:vertical-lr;direction:rtl"
-             min="0" max="100" value="100">
+      <div class="slider-wrap">
+        <input type="range" class="opacity-slider" id="opacity-slider"
+               min="0" max="100" value="100">
+      </div>
       <span class="slider-end-label">○</span>
     </div>
     <!-- Toggles à droite -->
@@ -872,17 +886,18 @@ function selectPlan(idx) {
   // Supprimer couches voirie/lieux
   clearOverlays();
 
-  // Réinitialiser les toggles
-  document.getElementById('toggle-voirie').checked = false;
-  document.getElementById('toggle-lieux').checked  = false;
-  document.getElementById('opacity-slider').value   = 100;
+  // Réinitialiser le slider
+  const sl = document.getElementById('opacity-slider');
+  sl.value = 100;
+  sl.style.setProperty('--pct', '100%');
 
-  // Créer nouveau plan avec fade-in
+  // Créer nouveau plan avec fade-in (errorTileUrl = tuile transparente si 404)
   activePlanLayer = L.tileLayer(plan.url, {
     attribution: plan.attribution,
     minZoom: 10, maxZoom: 18,
     bounds: PARIS_BOUNDS,
-    opacity: 0
+    opacity: 0,
+    errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
   });
   activePlanLayer.addTo(map).bringToFront();
 
@@ -962,6 +977,8 @@ ctrlToggle.addEventListener('click', () => {
 // ── OPACITÉ ──────────────────────────────────────────────
 document.getElementById('opacity-slider').addEventListener('input', function() {
   if (activePlanLayer) activePlanLayer.setOpacity(this.value / 100);
+  // Mettre à jour la couleur du track (valeur inversée car slider est pivoté)
+  this.style.setProperty('--pct', this.value + '%');
 });
 
 // ── ICÔNE LIEUX (doit être définie avant la délégation) ──
