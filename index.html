@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Plans Anciens de Paris</title>
+  <title>Plans de la Ville de Paris</title>
   <meta name="theme-color" content="#1a1008"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
@@ -60,142 +60,158 @@
       text-shadow: 0 1px 4px rgba(0,0,0,0.8);
     }
 
-    /* ── PANNEAU LATÉRAL GAUCHE : FOND ── */
-    #basemap-btn {
-      position: absolute;
-      top: 60px; left: 12px;
-      z-index: 1000;
-    }
-
-    /* ── PANNEAU LATÉRAL DROIT : ANNÉES ── */
+    /* ── TIMELINE HORIZONTALE EN BAS ── */
     #timeline-panel {
       position: absolute;
-      top: 60px; right: 0;
+      bottom: 20px; left: 0; right: 0;
       z-index: 1000;
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
-      gap: 0;
-      max-height: calc(100vh - 80px);
+      align-items: stretch;
+      pointer-events: none;
     }
 
     #timeline-toggle {
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      border-right: none;
-      border-radius: var(--radius) 0 0 var(--radius);
-      padding: 10px 12px;
-      color: var(--gold);
-      font-size: 18px;
-      cursor: pointer;
-      backdrop-filter: blur(8px);
-      margin-bottom: 2px;
+      display: none; /* plus nécessaire, la barre est toujours visible */
     }
 
     #timeline-scroll {
+      pointer-events: all;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      overflow-x: auto;
+      overflow-y: hidden;
       background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      border-right: none;
-      border-radius: var(--radius) 0 0 var(--radius);
-      overflow-y: auto;
-      max-height: calc(100vh - 160px);
-      width: 110px;
-      backdrop-filter: blur(8px);
-      scrollbar-width: thin;
-      scrollbar-color: var(--gold) transparent;
+      border-top: 1px solid var(--panel-border);
+      border-bottom: 1px solid var(--panel-border);
+      backdrop-filter: blur(10px);
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      scroll-behavior: smooth;
+      /* transition conservée pour masquer si besoin */
       transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
     }
 
+    #timeline-scroll::-webkit-scrollbar { display: none; }
+
     #timeline-scroll.hidden {
-      transform: translateX(120px);
+      transform: translateY(60px);
       opacity: 0;
       pointer-events: none;
     }
 
-    #timeline-scroll::-webkit-scrollbar { width: 4px; }
-    #timeline-scroll::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
-
     .year-item {
-      padding: 10px 12px;
+      flex-shrink: 0;
+      padding: 7px 14px;
       cursor: pointer;
-      border-bottom: 1px solid rgba(200,169,110,0.15);
+      border-right: 1px solid rgba(200,169,110,0.15);
       transition: background 0.18s;
-      text-align: right;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 72px;
     }
 
-    .year-item:last-child { border-bottom: none; }
+    .year-item:last-child { border-right: none; }
 
-    .year-item:hover {
-      background: rgba(200,169,110,0.15);
-    }
+    .year-item:hover { background: rgba(200,169,110,0.15); }
 
     .year-item.active {
-      background: linear-gradient(135deg, rgba(200,169,110,0.3), rgba(200,169,110,0.1));
-      border-left: 3px solid var(--gold);
+      background: linear-gradient(180deg, rgba(200,169,110,0.3), rgba(200,169,110,0.08));
+      border-bottom: 3px solid var(--gold);
     }
 
     .year-num {
       display: block;
       font-family: 'IM Fell English', serif;
-      font-size: 17px;
+      font-size: 16px;
       color: var(--gold-light);
       line-height: 1.1;
     }
 
     .year-sub {
       display: block;
-      font-size: 10px;
-      color: rgba(200,169,110,0.6);
+      font-size: 9px;
+      color: rgba(200,169,110,0.55);
       font-style: italic;
-      margin-top: 1px;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 70px;
     }
 
-    /* ── CONTRÔLES DU PLAN ACTIF ── */
+    /* ── BOUTON OUVRIR/FERMER CONTRÔLES (bas droite) ── */
+    #controls-toggle {
+      position: absolute;
+      bottom: 88px; right: 12px;
+      z-index: 1001;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--gold);
+      border-radius: 50%;
+      width: 38px; height: 38px;
+      display: none;   /* visible seulement quand plan actif */
+      align-items: center; justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s, transform 0.25s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #controls-toggle.visible { display: flex; }
+    #controls-toggle.open { transform: rotate(45deg); }
+    #controls-toggle:active { background: rgba(200,169,110,0.2); }
+
+    /* ── CONTRÔLES DU PLAN ACTIF — panneau vertical compact bas droite ── */
     #plan-controls {
       position: absolute;
-      bottom: 50px; left: 12px; right: 12px;
+      bottom: 134px; right: 12px;
       z-index: 1000;
       background: var(--panel-bg);
       border: 1px solid var(--panel-border);
       border-radius: var(--radius);
-      padding: 12px 16px;
+      padding: 10px 12px;
       backdrop-filter: blur(12px);
       display: none;
-      transition: transform 0.3s ease, opacity 0.3s;
+      width: 170px;
     }
 
     #plan-controls.visible {
       display: block;
-      animation: slideUp 0.3s ease;
+      animation: slideUp 0.25s ease;
     }
 
     @keyframes slideUp {
-      from { transform: translateY(20px); opacity: 0; }
+      from { transform: translateY(12px); opacity: 0; }
       to   { transform: translateY(0);    opacity: 1; }
     }
 
     .ctrl-row {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
+      gap: 8px;
+      margin-bottom: 9px;
     }
 
     .ctrl-row:last-child { margin-bottom: 0; }
 
     .ctrl-label {
       color: var(--gold);
-      font-size: 12px;
+      font-size: 10px;
       font-style: italic;
-      min-width: 80px;
       letter-spacing: 0.3px;
+      white-space: nowrap;
     }
 
-    /* Slider de transparence style parchemin */
+    /* Slider de transparence */
     .opacity-slider {
       flex: 1;
       -webkit-appearance: none;
-      height: 4px;
+      height: 3px;
       border-radius: 2px;
       background: linear-gradient(to right, var(--gold) 0%, var(--gold) var(--val, 100%), rgba(200,169,110,0.2) var(--val, 100%));
       outline: none;
@@ -204,30 +220,28 @@
 
     .opacity-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 18px; height: 18px;
+      width: 14px; height: 14px;
       border-radius: 50%;
       background: var(--gold);
-      border: 3px solid var(--sepia);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      border: 2px solid var(--sepia);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
       cursor: pointer;
       transition: transform 0.15s;
     }
 
-    .opacity-slider::-webkit-slider-thumb:active {
-      transform: scale(1.3);
-    }
+    .opacity-slider::-webkit-slider-thumb:active { transform: scale(1.3); }
 
     /* Toggles couches */
     .layer-toggle {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
       cursor: pointer;
     }
 
     .toggle-switch {
       position: relative;
-      width: 38px; height: 20px;
+      width: 32px; height: 17px;
       flex-shrink: 0;
     }
 
@@ -237,7 +251,7 @@
       position: absolute; inset: 0;
       background: rgba(200,169,110,0.2);
       border: 1px solid rgba(200,169,110,0.3);
-      border-radius: 10px;
+      border-radius: 9px;
       transition: background 0.25s;
     }
 
@@ -245,23 +259,18 @@
       content: '';
       position: absolute;
       top: 2px; left: 2px;
-      width: 14px; height: 14px;
+      width: 11px; height: 11px;
       border-radius: 50%;
       background: var(--gold);
       transition: transform 0.25s;
     }
 
-    .toggle-switch input:checked + .slider-bg {
-      background: rgba(200,169,110,0.4);
-    }
-
-    .toggle-switch input:checked + .slider-bg::after {
-      transform: translateX(18px);
-    }
+    .toggle-switch input:checked + .slider-bg { background: rgba(200,169,110,0.45); }
+    .toggle-switch input:checked + .slider-bg::after { transform: translateX(15px); }
 
     .toggle-label {
       color: var(--gold-light);
-      font-size: 13px;
+      font-size: 11px;
     }
 
     /* ── NAVIGATION RAPIDE ← → ── */
@@ -378,16 +387,17 @@
     #coords-bar {
       position: absolute;
       bottom: 0; left: 0; right: 0;
-      z-index: 1000;
-      background: var(--panel-bg);
-      border-top: 1px solid var(--panel-border);
-      padding: 5px 12px;
-      color: rgba(200,169,110,0.7);
+      z-index: 999;
+      background: rgba(20,12,4,0.85);
+      border-top: 1px solid rgba(200,169,110,0.12);
+      padding: 3px 12px;
+      color: rgba(200,169,110,0.55);
       font-family: 'Spectral', serif;
-      font-size: 11px;
+      font-size: 10px;
       letter-spacing: 0.3px;
       display: flex; justify-content: space-between; align-items: center;
       backdrop-filter: blur(4px);
+      height: 20px;
     }
 
     /* ── TOAST NOTIFICATION ── */
@@ -554,7 +564,7 @@
 
 <!-- Loading -->
 <div id="loading">
-  <div class="loading-title">Plans Anciens<br>de Paris</div>
+  <div class="loading-title">Plans de la<br>Ville de Paris</div>
   <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
   <div class="loading-subtitle">1800 — 1900</div>
 </div>
@@ -569,7 +579,7 @@
 </div>
 
 <!-- Titre du plan -->
-<div id="plan-title">Plans Anciens de Paris</div>
+<div id="plan-title">Plans de la Ville de Paris</div>
 
 <!-- Navigation ←/→ entre plans -->
 <button id="nav-prev" class="hidden" title="Plan précédent">‹</button>
@@ -583,33 +593,36 @@
 <div id="basemap-panel">
   <div class="basemap-option active" data-id="ortho">
     <div class="basemap-dot"></div>
-    <span class="basemap-name">Photo aérienne IGN</span>
+    <span class="basemap-name">Photo aérienne (Esri)</span>
   </div>
   <div class="basemap-option" data-id="plan">
     <div class="basemap-dot"></div>
-    <span class="basemap-name">Plan IGN</span>
+    <span class="basemap-name">Plan (CartoDB)</span>
   </div>
   <div class="basemap-option" data-id="scan25">
     <div class="basemap-dot"></div>
-    <span class="basemap-name">Scan 25 IGN</span>
+    <span class="basemap-name">Topographique</span>
   </div>
   <div class="basemap-option" data-id="osm">
     <div class="basemap-dot"></div>
     <span class="basemap-name">OpenStreetMap</span>
   </div>
-  <div class="basemap-option" data-id="topo">
+  <div class="basemap-option" data-id="dark">
     <div class="basemap-dot"></div>
-    <span class="basemap-name">Topo (OpenTopo)</span>
+    <span class="basemap-name">Fond sombre</span>
   </div>
 </div>
 
-<!-- Timeline droite -->
+<!-- Timeline horizontale en bas -->
 <div id="timeline-panel">
   <button id="timeline-toggle" title="Afficher/masquer">📅</button>
   <div id="timeline-scroll"></div>
 </div>
 
-<!-- Contrôles plan actif -->
+<!-- Bouton ouvrir/fermer les contrôles (bas droite) -->
+<button id="controls-toggle" title="Réglages">⚙</button>
+
+<!-- Contrôles plan actif — panneau vertical compact bas droite -->
 <div id="plan-controls">
   <div class="ctrl-row">
     <span class="ctrl-label">Transparence</span>
@@ -676,27 +689,28 @@ const map = L.map('map', {
 L.control.zoom({ position: 'topleft' }).addTo(map);
 L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
 
-// ── FONDS IGN + OSM ──────────────────────────────────────
+// ── FONDS CARTOGRAPHIQUES (sans CORS) ────────────────────
+// IGN nécessite une clé API avec domaine autorisé → remplacé par équivalents libres
 const BASEMAPS = {
   ortho: L.tileLayer(
-    'https://wxs.ign.fr/essentiels/geoportail/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
-    { attribution: '© IGN – Ortho', maxZoom: 21, minZoom: 2 }
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: '© Esri – World Imagery', maxZoom: 21, minZoom: 2 }
   ),
   plan: L.tileLayer(
-    'https://wxs.ign.fr/essentiels/geoportail/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png',
-    { attribution: '© IGN – Plan', maxZoom: 19, minZoom: 2 }
+    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    { attribution: '© CartoDB Voyager', maxZoom: 20, minZoom: 2, subdomains: 'abcd' }
   ),
   scan25: L.tileLayer(
-    'https://wxs.ign.fr/essentiels/geoportail/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
-    { attribution: '© IGN – Scan 25', maxZoom: 18, minZoom: 2 }
+    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    { attribution: '© OpenTopoMap (CC-BY-SA)', maxZoom: 17, minZoom: 2 }
   ),
   osm: L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     { attribution: '© OpenStreetMap contributors', maxZoom: 19 }
   ),
-  topo: L.tileLayer(
-    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenTopoMap (CC-BY-SA)', maxZoom: 17 }
+  dark: L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    { attribution: '© CartoDB Dark', maxZoom: 20, minZoom: 2, subdomains: 'abcd' }
   )
 };
 
@@ -803,9 +817,11 @@ function selectPlan(idx) {
     el.classList.toggle('active', i === idx);
   });
 
-  // Scroll automatique dans la timeline
+  // Scroll horizontal automatique dans la timeline
   const activeEl = document.querySelector('.year-item.active');
-  if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  if (activeEl) {
+    activeEl.scrollIntoView({ inline: 'nearest', behavior: 'smooth', block: 'nearest' });
+  }
 
   // Supprimer plan précédent avec transition opacité
   if (activePlanLayer) {
@@ -847,8 +863,8 @@ function selectPlan(idx) {
   document.getElementById('plan-title').textContent =
     `${plan.annee} — ${plan.titre} (${plan.source})`;
 
-  // Contrôles
-  document.getElementById('plan-controls').classList.add('visible');
+  // Afficher le bouton ⚙ (mais pas le panneau lui-même)
+  document.getElementById('controls-toggle').classList.add('visible');
   document.getElementById('swipe-hint') && (document.getElementById('swipe-hint').style.display = 'none');
 
   // Boutons nav
@@ -886,18 +902,21 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   selectPlan(currentIndex - 1);
 });
 
+// ── BOUTON ⚙ CONTRÔLES ───────────────────────────────────
+const ctrlToggle = document.getElementById('controls-toggle');
+ctrlToggle.addEventListener('click', () => {
+  const panel = document.getElementById('plan-controls');
+  const isOpen = panel.classList.contains('visible');
+  panel.classList.toggle('visible', !isOpen);
+  ctrlToggle.classList.toggle('open', !isOpen);
+});
+
 // ── OPACITÉ ──────────────────────────────────────────────
 const opacitySlider = document.getElementById('opacity-slider');
 opacitySlider.addEventListener('input', function() {
   const val = this.value / 100;
   this.style.setProperty('--val', this.value + '%');
   if (activePlanLayer) activePlanLayer.setOpacity(val);
-});
-
-// ── TOGGLE TIMELINE ──────────────────────────────────────
-document.getElementById('timeline-toggle').addEventListener('click', () => {
-  timelineOpen = !timelineOpen;
-  document.getElementById('timeline-scroll').classList.toggle('hidden', !timelineOpen);
 });
 
 // ── FONDS ────────────────────────────────────────────────
