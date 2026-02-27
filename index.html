@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Plans Anciens de Paris</title>
+  <meta name="theme-color" content="#1a1008"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Spectral:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --sepia:      #1a1008;
+      --sepia-mid:  #3d2b10;
+      --sepia-warm: #6b4a1e;
+      --gold:       #c8a96e;
+      --gold-light: #e8d5a3;
+      --parchment:  #f5ead0;
+      --ink:        #2a1a06;
+      --panel-bg:   rgba(20, 12, 4, 0.92);
+      --panel-border: rgba(200, 169, 110, 0.35);
+      --radius:     12px;
+      --shadow:     0 8px 32px rgba(0,0,0,0.6);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; font-family: 'Spectral', serif; }
+
+    #map {
+      position: absolute; inset: 0;
+      background: var(--sepia);
+    }
+
+    /* ── TITRE FLOTTANT ── */
+    #plan-title {
+      position: absolute;
+      top: 14px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 24px;
+      padding: 6px 20px;
+      color: var(--gold-light);
+      font-family: 'IM Fell English', serif;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+      transition: opacity 0.3s;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+
+    /* ── PANNEAU LATÉRAL GAUCHE : FOND ── */
+    #basemap-btn {
+      position: absolute;
+      top: 60px; left: 12px;
+      z-index: 1000;
+    }
+
+    /* ── PANNEAU LATÉRAL DROIT : ANNÉES ── */
+    #timeline-panel {
+      position: absolute;
+      top: 60px; right: 0;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0;
+      max-height: calc(100vh - 80px);
+    }
+
+    #timeline-toggle {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-right: none;
+      border-radius: var(--radius) 0 0 var(--radius);
+      padding: 10px 12px;
+      color: var(--gold);
+      font-size: 18px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      margin-bottom: 2px;
+    }
+
+    #timeline-scroll {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-right: none;
+      border-radius: var(--radius) 0 0 var(--radius);
+      overflow-y: auto;
+      max-height: calc(100vh - 160px);
+      width: 110px;
+      backdrop-filter: blur(8px);
+      scrollbar-width: thin;
+      scrollbar-color: var(--gold) transparent;
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+    }
+
+    #timeline-scroll.hidden {
+      transform: translateX(120px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #timeline-scroll::-webkit-scrollbar { width: 4px; }
+    #timeline-scroll::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+    .year-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(200,169,110,0.15);
+      transition: background 0.18s;
+      text-align: right;
+    }
+
+    .year-item:last-child { border-bottom: none; }
+
+    .year-item:hover {
+      background: rgba(200,169,110,0.15);
+    }
+
+    .year-item.active {
+      background: linear-gradient(135deg, rgba(200,169,110,0.3), rgba(200,169,110,0.1));
+      border-left: 3px solid var(--gold);
+    }
+
+    .year-num {
+      display: block;
+      font-family: 'IM Fell English', serif;
+      font-size: 17px;
+      color: var(--gold-light);
+      line-height: 1.1;
+    }
+
+    .year-sub {
+      display: block;
+      font-size: 10px;
+      color: rgba(200,169,110,0.6);
+      font-style: italic;
+      margin-top: 1px;
+    }
+
+    /* ── CONTRÔLES DU PLAN ACTIF ── */
+    #plan-controls {
+      position: absolute;
+      bottom: 50px; left: 12px; right: 12px;
+      z-index: 1000;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      backdrop-filter: blur(12px);
+      display: none;
+      transition: transform 0.3s ease, opacity 0.3s;
+    }
+
+    #plan-controls.visible {
+      display: block;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .ctrl-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .ctrl-row:last-child { margin-bottom: 0; }
+
+    .ctrl-label {
+      color: var(--gold);
+      font-size: 12px;
+      font-style: italic;
+      min-width: 80px;
+      letter-spacing: 0.3px;
+    }
+
+    /* Slider de transparence style parchemin */
+    .opacity-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(to right, var(--gold) 0%, var(--gold) var(--val, 100%), rgba(200,169,110,0.2) var(--val, 100%));
+      outline: none;
+      cursor: pointer;
+    }
+
+    .opacity-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 3px solid var(--sepia);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .opacity-slider::-webkit-slider-thumb:active {
+      transform: scale(1.3);
+    }
+
+    /* Toggles couches */
+    .layer-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 38px; height: 20px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-switch .slider-bg {
+      position: absolute; inset: 0;
+      background: rgba(200,169,110,0.2);
+      border: 1px solid rgba(200,169,110,0.3);
+      border-radius: 10px;
+      transition: background 0.25s;
+    }
+
+    .toggle-switch .slider-bg::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--gold);
+      transition: transform 0.25s;
+    }
+
+    .toggle-switch input:checked + .slider-bg {
+      background: rgba(200,169,110,0.4);
+    }
+
+    .toggle-switch input:checked + .slider-bg::after {
+      transform: translateX(18px);
+    }
+
+    .toggle-label {
+      color: var(--gold-light);
+      font-size: 13px;
+    }
+
+    /* ── NAVIGATION RAPIDE ← → ── */
+    #nav-prev, #nav-next {
+      position: absolute;
+      top: 50%; z-index: 1000;
+      transform: translateY(-50%);
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--gold);
+      width: 36px; height: 56px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s, transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #nav-prev {
+      left: 0;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      border-left: none;
+    }
+
+    #nav-next {
+      right: 0;
+      border-radius: var(--radius) 0 0 var(--radius);
+      border-right: none;
+    }
+
+    #nav-prev:active, #nav-next:active {
+      background: rgba(200,169,110,0.2);
+      transform: translateY(-50%) scale(0.93);
+    }
+
+    #nav-prev.hidden, #nav-next.hidden {
+      opacity: 0; pointer-events: none;
+    }
+
+    /* ── BOUTONS GAUCHE ── */
+    .map-btn {
+      position: absolute;
+      z-index: 1000;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--gold);
+      border-radius: var(--radius);
+      padding: 9px 13px;
+      font-size: 18px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      line-height: 1;
+    }
+
+    .map-btn:active { background: rgba(200,169,110,0.2); }
+
+    #locate-btn  { top: 60px; left: 12px; }
+    #layers-btn  { top: 110px; left: 12px; }
+
+    #locate-btn.tracking {
+      background: rgba(200,80,80,0.3);
+      border-color: rgba(200,80,80,0.6);
+      color: #ff9999;
+    }
+
+    /* ── POPUP FONDS ── */
+    #basemap-panel {
+      position: absolute;
+      top: 60px; left: 52px;
+      z-index: 1001;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 10px;
+      min-width: 180px;
+      backdrop-filter: blur(12px);
+      display: none;
+    }
+
+    #basemap-panel.open { display: block; animation: fadeIn 0.2s; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+
+    .basemap-option {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .basemap-option:hover, .basemap-option.active {
+      background: rgba(200,169,110,0.2);
+    }
+
+    .basemap-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      transition: background 0.15s;
+    }
+
+    .basemap-option.active .basemap-dot { background: var(--gold); }
+
+    .basemap-name {
+      color: var(--gold-light);
+      font-size: 13px;
+    }
+
+    /* ── BARRE DU BAS : COORDS ── */
+    #coords-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: var(--panel-bg);
+      border-top: 1px solid var(--panel-border);
+      padding: 5px 12px;
+      color: rgba(200,169,110,0.7);
+      font-family: 'Spectral', serif;
+      font-size: 11px;
+      letter-spacing: 0.3px;
+      display: flex; justify-content: space-between; align-items: center;
+      backdrop-filter: blur(4px);
+    }
+
+    /* ── TOAST NOTIFICATION ── */
+    #toast {
+      position: absolute;
+      top: 60px; left: 50%; transform: translateX(-50%);
+      z-index: 2000;
+      background: rgba(200,169,110,0.95);
+      color: var(--sepia);
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      white-space: nowrap;
+    }
+
+    #toast.show { opacity: 1; }
+
+    /* ── LEAFLET OVERRIDES ── */
+    .leaflet-control-attribution {
+      background: rgba(20,12,4,0.7) !important;
+      color: rgba(200,169,110,0.6) !important;
+      font-size: 9px !important;
+      backdrop-filter: blur(4px);
+    }
+
+    .leaflet-control-attribution a { color: var(--gold) !important; }
+
+    .leaflet-control-zoom {
+      border: 1px solid var(--panel-border) !important;
+      border-radius: var(--radius) !important;
+      overflow: hidden;
+    }
+
+    .leaflet-control-zoom a {
+      background: var(--panel-bg) !important;
+      color: var(--gold) !important;
+      border-bottom: 1px solid var(--panel-border) !important;
+      backdrop-filter: blur(8px);
+    }
+
+    /* ── MARQUEUR LOCALISATION ── */
+    .loc-marker-wrap {
+      position: relative;
+    }
+
+    .loc-pulse {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(200,169,110,0.15);
+      border: 2px solid rgba(200,169,110,0.5);
+      animation: pulse 2s ease-out infinite;
+    }
+
+    @keyframes pulse {
+      0%   { transform: scale(0.5); opacity: 1; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    /* Flèche nord */
+    .heading-wrap {
+      font-size: 28px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+      transform-origin: center;
+    }
+
+    /* ── POPUP LEAFLET ── */
+    .leaflet-popup-content-wrapper {
+      background: var(--panel-bg) !important;
+      border: 1px solid var(--panel-border) !important;
+      border-radius: var(--radius) !important;
+      color: var(--gold-light) !important;
+      backdrop-filter: blur(12px);
+    }
+
+    .leaflet-popup-tip {
+      background: var(--sepia-mid) !important;
+    }
+
+    .leaflet-popup-content {
+      font-family: 'Spectral', serif !important;
+      font-size: 13px !important;
+      line-height: 1.6 !important;
+    }
+
+    .leaflet-popup-content b {
+      color: var(--gold) !important;
+      font-family: 'IM Fell English', serif !important;
+      font-size: 14px !important;
+    }
+
+    .leaflet-popup-close-button {
+      color: var(--gold) !important;
+    }
+
+    /* Loading overlay */
+    #loading {
+      position: absolute; inset: 0;
+      z-index: 9999;
+      background: var(--sepia);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px;
+      transition: opacity 0.6s;
+    }
+
+    #loading.done { opacity: 0; pointer-events: none; }
+
+    .loading-title {
+      font-family: 'IM Fell English', serif;
+      font-size: 28px;
+      color: var(--gold);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .loading-subtitle {
+      color: rgba(200,169,110,0.5);
+      font-style: italic;
+      font-size: 13px;
+    }
+
+    .loading-bar-wrap {
+      width: 160px; height: 3px;
+      background: rgba(200,169,110,0.2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .loading-bar {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 2px;
+      animation: loadbar 1.5s ease-out forwards;
+    }
+
+    @keyframes loadbar {
+      from { width: 0; }
+      to   { width: 100%; }
+    }
+
+    /* Swipe hint */
+    #swipe-hint {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 500;
+      color: rgba(200,169,110,0.4);
+      font-family: 'IM Fell English', serif;
+      font-size: 14px;
+      font-style: italic;
+      pointer-events: none;
+      text-align: center;
+      line-height: 1.8;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="loading-title">Plans Anciens<br>de Paris</div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+  <div class="loading-subtitle">1800 — 1900</div>
+</div>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Hint initial -->
+<div id="swipe-hint" id="swipe-hint">
+  ✦ Sélectionnez une année →<br>
+  pour explorer Paris d'autrefois
+</div>
+
+<!-- Titre du plan -->
+<div id="plan-title">Plans Anciens de Paris</div>
+
+<!-- Navigation ←/→ entre plans -->
+<button id="nav-prev" class="hidden" title="Plan précédent">‹</button>
+<button id="nav-next" class="hidden" title="Plan suivant">›</button>
+
+<!-- Boutons gauche -->
+<button class="map-btn" id="locate-btn" title="Me localiser">📍</button>
+<button class="map-btn" id="layers-btn" title="Fond cartographique">🗺</button>
+
+<!-- Panneau fonds -->
+<div id="basemap-panel">
+  <div class="basemap-option active" data-id="ortho">
+    <div class="basemap-dot"></div>
+    <span class="basemap-name">Photo aérienne IGN</span>
+  </div>
+  <div class="basemap-option" data-id="plan">
+    <div class="basemap-dot"></div>
+    <span class="basemap-name">Plan IGN</span>
+  </div>
+  <div class="basemap-option" data-id="scan25">
+    <div class="basemap-dot"></div>
+    <span class="basemap-name">Scan 25 IGN</span>
+  </div>
+  <div class="basemap-option" data-id="osm">
+    <div class="basemap-dot"></div>
+    <span class="basemap-name">OpenStreetMap</span>
+  </div>
+  <div class="basemap-option" data-id="topo">
+    <div class="basemap-dot"></div>
+    <span class="basemap-name">Topo (OpenTopo)</span>
+  </div>
+</div>
+
+<!-- Timeline droite -->
+<div id="timeline-panel">
+  <button id="timeline-toggle" title="Afficher/masquer">📅</button>
+  <div id="timeline-scroll"></div>
+</div>
+
+<!-- Contrôles plan actif -->
+<div id="plan-controls">
+  <div class="ctrl-row">
+    <span class="ctrl-label">Transparence</span>
+    <input type="range" class="opacity-slider" id="opacity-slider" min="0" max="100" value="100">
+  </div>
+  <div class="ctrl-row">
+    <label class="layer-toggle">
+      <span class="toggle-switch">
+        <input type="checkbox" id="toggle-voirie">
+        <span class="slider-bg"></span>
+      </span>
+      <span class="toggle-label">Voirie historique</span>
+    </label>
+  </div>
+  <div class="ctrl-row">
+    <label class="layer-toggle">
+      <span class="toggle-switch">
+        <input type="checkbox" id="toggle-lieux">
+        <span class="slider-bg"></span>
+      </span>
+      <span class="toggle-label">Monuments & lieux</span>
+    </label>
+  </div>
+</div>
+
+<!-- Barre coords -->
+<div id="coords-bar">
+  <span id="coords-latlon">—</span>
+  <span id="coords-l93">—</span>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+// ── CONFIG ──────────────────────────────────────────────
+const PLANS_JSON_URL = './plans.json'; // ← Modifier pour URL distante en prod
+const GEOJSON_VOIRIE = 'denominations-emprises-voies-actuelles.geojson';
+const GEOJSON_LIEUX  = 'lieux.geojson';
+const PARIS_BOUNDS   = [[48.810, 2.215], [48.910, 2.425]];
+const PARIS_CENTER   = [48.8566, 2.3522];
+
+// ── ÉTAT ────────────────────────────────────────────────
+let plans         = [];
+let currentIndex  = -1;
+let activePlanLayer = null;
+let activeVoirieLayer = null;
+let activeLieuxLayer  = null;
+let watchId       = null;
+let userMarker    = null;
+let userCircle    = null;
+let headingMarker = null;
+let timelineOpen  = true;
+
+// ── CARTE ───────────────────────────────────────────────
+const map = L.map('map', {
+  center: PARIS_CENTER,
+  zoom: 13,
+  zoomControl: false,
+  attributionControl: true
+});
+
+L.control.zoom({ position: 'topleft' }).addTo(map);
+L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
+
+// ── FONDS IGN + OSM ──────────────────────────────────────
+const BASEMAPS = {
+  ortho: L.tileLayer(
+    'https://wxs.ign.fr/essentiels/geoportail/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
+    { attribution: '© IGN – Ortho', maxZoom: 21, minZoom: 2 }
+  ),
+  plan: L.tileLayer(
+    'https://wxs.ign.fr/essentiels/geoportail/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png',
+    { attribution: '© IGN – Plan', maxZoom: 19, minZoom: 2 }
+  ),
+  scan25: L.tileLayer(
+    'https://wxs.ign.fr/essentiels/geoportail/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.MAPS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
+    { attribution: '© IGN – Scan 25', maxZoom: 18, minZoom: 2 }
+  ),
+  osm: L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { attribution: '© OpenStreetMap contributors', maxZoom: 19 }
+  ),
+  topo: L.tileLayer(
+    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    { attribution: '© OpenTopoMap (CC-BY-SA)', maxZoom: 17 }
+  )
+};
+
+let activeBasemap = 'ortho';
+BASEMAPS.ortho.addTo(map);
+
+// ── PROJ4 inline (Lambert 93) ────────────────────────────
+// Simple conversion WGS84→L93 (approximation valide pour la France)
+function wgs84ToL93(lat, lon) {
+  // Constantes Lambert 93
+  const a = 6378137.0, e = 0.0818191908426215;
+  const lc = 3 * Math.PI / 180;
+  const n  = 0.7256077650532670;
+  const c  = 11754255.426096;
+  const xs = 700000, ys = 12655612.049876;
+  const l  = lon * Math.PI / 180;
+  const phi = lat * Math.PI / 180;
+  const sl  = Math.sin(phi);
+  const eso = e * sl;
+  const L   = Math.log(Math.tan(Math.PI/4 + phi/2) * Math.pow((1-eso)/(1+eso), e/2));
+  const r   = c * Math.exp(-n * L);
+  const t   = -n * (l - lc);
+  const x   = xs + r * Math.sin(t);
+  const y   = ys - r * Math.cos(t);
+  return [Math.round(x * 1000) / 1000, Math.round(y * 1000) / 1000];
+}
+
+// ── COORDONNÉES ──────────────────────────────────────────
+map.on('mousemove touchmove', function(e) {
+  const { lat, lng } = e.latlng;
+  const [x, y] = wgs84ToL93(lat, lng);
+  document.getElementById('coords-latlon').textContent =
+    `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  document.getElementById('coords-l93').textContent =
+    `L93 : ${x.toFixed(0)} / ${y.toFixed(0)}`;
+});
+
+// ── TOAST ────────────────────────────────────────────────
+function showToast(msg, duration = 2000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── CHARGEMENT DES PLANS ─────────────────────────────────
+async function loadPlans() {
+  try {
+    const r = await fetch(PLANS_JSON_URL);
+    plans = await r.json();
+    plans.sort((a, b) => a.annee - b.annee);
+  } catch(e) {
+    // Fallback embarqué si hors ligne
+    plans = [
+      { annee:1796, titre:"Verniquet", auteur:"Verniquet", source:"BnF", url:"https://www.plansdeparis.fr/Paris/tuile/1796_Verniquet_Fnp_369A/{z}/{x}/{y}.png", attribution:"BnF – Verniquet 1796" },
+      { annee:1807, titre:"Atlas Napoléonien", auteur:"Napoléonien", source:"AN", url:"https://www.plansdeparis.fr/Paris/tuile/1807_1825_Napoleonien_412A/{z}/{x}/{y}.png", attribution:"AN – Napoléonien 1807" },
+      { annee:1817, titre:"Picquet", auteur:"Picquet", source:"BmF", url:"https://www.plansdeparis.fr/Paris/tuile/1817_Picquet_Paris_434A/{z}/{x}/{y}.png", attribution:"BmF – Picquet 1817" },
+      { annee:1825, titre:"Jacoubet", auteur:"Jacoubet", source:"BHVP", url:"https://www.plansdeparis.fr/Paris/tuile/1825_Jacoubet_Paris_458A/{z}/{x}/{y}.png", attribution:"BHVP – Mangot 1825" },
+      { annee:1831, titre:"Perrot", auteur:"Perrot", source:"BnF", url:"https://www.plansdeparis.fr/Paris/tuile/1831_perrot_Paris_482A/{z}/{x}/{y}.png", attribution:"BnF – Perrot 1831" },
+      { annee:1836, titre:"Vasserot", auteur:"Vasserot", source:"Alpage", url:"https://www.plansdeparis.fr/Paris/tuile/1836_vasserot_Fnp_461A/{z}/{x}/{y}.png", attribution:"Alpage – Vasserot 1836" },
+      { annee:1842, titre:"Renouard", auteur:"Renouard", source:"BmF", url:"https://www.plansdeparis.fr/Paris/tuile/1842_Renouard_Paris_544A/{z}/{x}/{y}.png", attribution:"BmF – Renouard 1842" },
+      { annee:1854, titre:"Malte", auteur:"Malte", source:"BnF", url:"https://www.plansdeparis.fr/Paris/tuile/1854ca_Malte_Paris_589C/{z}/{x}/{y}.png", attribution:"BnF – Malte 1854" },
+      { annee:1860, titre:"Lebrun", auteur:"Lebrun", source:"BnF", url:"https://www.plansdeparis.fr/Paris/tuile/1860_lebrun_Paris_618B/{z}/{x}/{y}.png", attribution:"BnF – Lebrun 1860" },
+      { annee:1863, titre:"Logerot", auteur:"Logerot", source:"BmF", url:"https://www.plansdeparis.fr/Paris/tuile/1863_Logerot_Paris_FMB_642D/{z}/{x}/{y}.png", attribution:"BmF – Logerot 1863" },
+      { annee:1867, titre:"Dumas-Vorzet", auteur:"Dumas & Vorzet", source:"BmF", url:"https://www.plansdeparis.fr/Paris/tuile/1867_Dumas_Vorzet_Paris_fmb_733A/{z}/{x}/{y}.png", attribution:"BmF – Dumas Vorzet 1867" },
+      { annee:1871, titre:"Parcellaire", auteur:"Parcellaire", source:"AdP", url:"https://www.plansdeparis.fr/Paris/tuile/1900_parcellaire_Paris_838A/{z}/{x}/{y}.png", attribution:"AdP – Parcellaire 1871" },
+      { annee:1876, titre:"Paris Diamant", auteur:"Diamant", source:"BmF", url:"https://www.plansdeparis.fr/Paris/tuile/1876_paris_diamant_FMB_734H/{z}/{x}/{y}.png", attribution:"BmF – Diamant 1876" },
+      { annee:1900, titre:"Atlas 500e", auteur:"Atlas", source:"AdP", url:"https://www.plansdeparis.fr/Paris/tuile/1900_Atlas_Paris_500e_944A/{z}/{x}/{y}.png", attribution:"AdP – Atlas 1900" }
+    ];
+  }
+  buildTimeline();
+  dismissLoading();
+}
+
+function dismissLoading() {
+  setTimeout(() => {
+    const l = document.getElementById('loading');
+    l.classList.add('done');
+    setTimeout(() => l.remove(), 700);
+  }, 1200);
+}
+
+// ── TIMELINE ─────────────────────────────────────────────
+function buildTimeline() {
+  const scroll = document.getElementById('timeline-scroll');
+  scroll.innerHTML = '';
+  plans.forEach((plan, idx) => {
+    const div = document.createElement('div');
+    div.className = 'year-item';
+    div.dataset.idx = idx;
+    div.innerHTML = `<span class="year-num">${plan.annee}</span><span class="year-sub">${plan.titre}</span>`;
+    div.addEventListener('click', () => selectPlan(idx));
+    scroll.appendChild(div);
+  });
+}
+
+function selectPlan(idx) {
+  if (idx < 0 || idx >= plans.length) return;
+  currentIndex = idx;
+  const plan = plans[idx];
+
+  // Mettre à jour timeline
+  document.querySelectorAll('.year-item').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
+
+  // Scroll automatique dans la timeline
+  const activeEl = document.querySelector('.year-item.active');
+  if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+  // Supprimer plan précédent avec transition opacité
+  if (activePlanLayer) {
+    const oldLayer = activePlanLayer;
+    let op = 1;
+    const fadeOut = setInterval(() => {
+      op -= 0.15;
+      if (op <= 0) { clearInterval(fadeOut); map.removeLayer(oldLayer); }
+      else oldLayer.setOpacity(op);
+    }, 30);
+  }
+
+  // Supprimer couches voirie/lieux
+  clearOverlays();
+
+  // Réinitialiser les toggles
+  document.getElementById('toggle-voirie').checked = false;
+  document.getElementById('toggle-lieux').checked  = false;
+  document.getElementById('opacity-slider').value   = 100;
+
+  // Créer nouveau plan avec fade-in
+  activePlanLayer = L.tileLayer(plan.url, {
+    attribution: plan.attribution,
+    minZoom: 10, maxZoom: 18,
+    bounds: PARIS_BOUNDS,
+    opacity: 0
+  });
+  activePlanLayer.addTo(map).bringToFront();
+
+  // Fade-in
+  let op2 = 0;
+  const fadeIn = setInterval(() => {
+    op2 += 0.1;
+    if (op2 >= 1) { clearInterval(fadeIn); activePlanLayer.setOpacity(1); }
+    else activePlanLayer.setOpacity(op2);
+  }, 20);
+
+  // Titre
+  document.getElementById('plan-title').textContent =
+    `${plan.annee} — ${plan.titre} (${plan.source})`;
+
+  // Contrôles
+  document.getElementById('plan-controls').classList.add('visible');
+  document.getElementById('swipe-hint') && (document.getElementById('swipe-hint').style.display = 'none');
+
+  // Boutons nav
+  document.getElementById('nav-prev').classList.toggle('hidden', idx === 0);
+  document.getElementById('nav-next').classList.toggle('hidden', idx === plans.length - 1);
+
+  showToast(`${plan.annee} – ${plan.auteur}`);
+}
+
+function clearOverlays() {
+  if (activeVoirieLayer) { map.removeLayer(activeVoirieLayer); activeVoirieLayer = null; }
+  if (activeLieuxLayer)  { map.removeLayer(activeLieuxLayer);  activeLieuxLayer  = null; }
+}
+
+// ── NAVIGATION ← → ──────────────────────────────────────
+document.getElementById('nav-prev').addEventListener('click', () => selectPlan(currentIndex - 1));
+document.getElementById('nav-next').addEventListener('click', () => selectPlan(currentIndex + 1));
+
+// Swipe tactile sur la carte
+let touchStartX = 0;
+document.getElementById('map').addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+}, { passive: true });
+document.getElementById('map').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 60) {
+    if (dx < 0) selectPlan(currentIndex + 1); // swipe gauche → suivant
+    else        selectPlan(currentIndex - 1); // swipe droit  → précédent
+  }
+}, { passive: true });
+
+// Touches clavier
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') selectPlan(currentIndex + 1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   selectPlan(currentIndex - 1);
+});
+
+// ── OPACITÉ ──────────────────────────────────────────────
+const opacitySlider = document.getElementById('opacity-slider');
+opacitySlider.addEventListener('input', function() {
+  const val = this.value / 100;
+  this.style.setProperty('--val', this.value + '%');
+  if (activePlanLayer) activePlanLayer.setOpacity(val);
+});
+
+// ── TOGGLE TIMELINE ──────────────────────────────────────
+document.getElementById('timeline-toggle').addEventListener('click', () => {
+  timelineOpen = !timelineOpen;
+  document.getElementById('timeline-scroll').classList.toggle('hidden', !timelineOpen);
+});
+
+// ── FONDS ────────────────────────────────────────────────
+document.getElementById('layers-btn').addEventListener('click', () => {
+  document.getElementById('basemap-panel').classList.toggle('open');
+});
+
+document.querySelectorAll('.basemap-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const id = opt.dataset.id;
+    if (id === activeBasemap) return;
+
+    // Désactiver ancien
+    document.querySelectorAll('.basemap-option').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+
+    map.removeLayer(BASEMAPS[activeBasemap]);
+    activeBasemap = id;
+    BASEMAPS[id].addTo(map);
+
+    // Remonter le plan par-dessus
+    if (activePlanLayer) activePlanLayer.bringToFront();
+    if (activeVoirieLayer) activeVoirieLayer.bringToFront();
+    if (activeLieuxLayer)  activeLieuxLayer.bringToFront();
+
+    document.getElementById('basemap-panel').classList.remove('open');
+    showToast('Fond : ' + opt.querySelector('.basemap-name').textContent);
+  });
+});
+
+// Fermer panel fonds en cliquant ailleurs
+map.on('click', () => document.getElementById('basemap-panel').classList.remove('open'));
+
+// ── VOIRIE ───────────────────────────────────────────────
+document.getElementById('toggle-voirie').addEventListener('change', async function() {
+  if (!this.checked) {
+    if (activeVoirieLayer) { map.removeLayer(activeVoirieLayer); activeVoirieLayer = null; }
+    return;
+  }
+  if (currentIndex < 0) return;
+  const year = plans[currentIndex].annee;
+  try {
+    const data = await (await fetch(GEOJSON_VOIRIE)).json();
+    const filtered = {
+      type: 'FeatureCollection',
+      features: data.features.filter(f =>
+        f.geometry.type === 'Polygon' &&
+        f.properties.date_arret?.includes(year.toString())
+      )
+    };
+    activeVoirieLayer = L.geoJSON(filtered, {
+      style: { color: '#c8a96e', weight: 1.5, opacity: 0.8, fillColor: '#c8a96e', fillOpacity: 0.15 },
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties;
+        layer.bindPopup(`
+          <b>${p.typo_min || 'Voirie'}</b><br>
+          Arrdt : ${p.arrdt || '—'}<br>
+          Ouverture : ${p.ouverture || '—'}<br>
+          Longueur : ${p.longueur || '—'} m
+        `);
+      }
+    }).addTo(map).bringToFront();
+    showToast('Voirie historique chargée');
+  } catch(e) { showToast('Voirie non disponible'); this.checked = false; }
+});
+
+// ── LIEUX ────────────────────────────────────────────────
+const lieuxIcon = L.divIcon({
+  className: '',
+  html: `<svg width="22" height="30" viewBox="0 0 22 30" xmlns="http://www.w3.org/2000/svg">
+    <path d="M11 0C5 0 0 5 0 11c0 8 11 19 11 19s11-11 11-19C22 5 17 0 11 0z" fill="#c8a96e" stroke="#1a1008" stroke-width="1.5"/>
+    <circle cx="11" cy="11" r="5" fill="#1a1008"/>
+  </svg>`,
+  iconSize: [22, 30],
+  iconAnchor: [11, 30],
+  popupAnchor: [0, -32]
+});
+
+document.getElementById('toggle-lieux').addEventListener('change', async function() {
+  if (!this.checked) {
+    if (activeLieuxLayer) { map.removeLayer(activeLieuxLayer); activeLieuxLayer = null; }
+    return;
+  }
+  if (currentIndex < 0) return;
+  const year = plans[currentIndex].annee;
+  try {
+    const data = await (await fetch(GEOJSON_LIEUX)).json();
+    const filtered = {
+      type: 'FeatureCollection',
+      features: data.features.filter(f =>
+        f.geometry.type === 'Point' &&
+        String(f.properties.datecrea)?.includes(year.toString())
+      )
+    };
+    activeLieuxLayer = L.geoJSON(filtered, {
+      pointToLayer: (f, latlng) => L.marker(latlng, { icon: lieuxIcon }),
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties;
+        let html = `<b>${p.nom || 'Lieu'}</b><br>`;
+        if (p.genre)    html += `${p.genre}<br>`;
+        if (p.datecrea) html += `Créé : ${p.datecrea}<br>`;
+        if (p.datedestru) html += `Détruit : ${p.datedestru}<br>`;
+        if (p.archi)    html += `Architecte : ${p.archi}<br>`;
+        if (p.commentaire) html += `<em>${p.commentaire}</em><br>`;
+        if (p.url)      html += `<a href="${p.url}" target="_blank">→ Source</a>`;
+        layer.bindPopup(html);
+      }
+    }).addTo(map).bringToFront();
+    showToast(`${filtered.features.length} lieu(x) chargé(s)`);
+  } catch(e) { showToast('Lieux non disponibles'); this.checked = false; }
+});
+
+// ── LOCALISATION ─────────────────────────────────────────
+// Icône "visiteur du temps" adaptée aux plans anciens
+const userIcon = L.divIcon({
+  className: '',
+  html: `<div style="position:relative;width:40px;height:40px;">
+    <div style="position:absolute;inset:0;border-radius:50%;border:2px solid rgba(200,169,110,0.6);animation:locpulse 2s infinite;"></div>
+    <svg width="40" height="40" viewBox="0 0 40 40" style="position:absolute;inset:0;" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="10" fill="rgba(200,169,110,0.3)" stroke="#c8a96e" stroke-width="2"/>
+      <circle cx="20" cy="20" r="4"  fill="#c8a96e"/>
+    </svg>
+  </div>`,
+  iconSize: [40, 40],
+  iconAnchor: [20, 20]
+});
+
+const compassIcon = L.divIcon({
+  className: '',
+  html: `<div class="heading-wrap" style="font-size:22px;transform-origin:center;">🧭</div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14]
+});
+
+const locBtn = document.getElementById('locate-btn');
+locBtn.addEventListener('click', () => {
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+    if (userMarker)    { map.removeLayer(userMarker);    userMarker    = null; }
+    if (headingMarker) { map.removeLayer(headingMarker); headingMarker = null; }
+    locBtn.textContent = '📍';
+    locBtn.classList.remove('tracking');
+    locBtn.title = 'Me localiser';
+    showToast('Localisation arrêtée');
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    showToast('Géolocalisation non supportée');
+    return;
+  }
+
+  locBtn.textContent = '⏳';
+
+  watchId = navigator.geolocation.watchPosition(
+    pos => {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      const latlng = [lat, lng];
+
+      if (!userMarker) {
+        userMarker = L.marker(latlng, { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
+        map.setView(latlng, Math.max(map.getZoom(), 15), { animate: true });
+        locBtn.textContent = '🛑';
+        locBtn.classList.add('tracking');
+        locBtn.title = 'Arrêter le suivi';
+      } else {
+        userMarker.setLatLng(latlng);
+        map.panTo(latlng, { animate: true, duration: 0.5 });
+      }
+    },
+    err => {
+      showToast('Erreur GPS : ' + err.message);
+      locBtn.textContent = '📍';
+      locBtn.classList.remove('tracking');
+      watchId = null;
+    },
+    { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+  );
+});
+
+// Boussole
+window.addEventListener('deviceorientation', e => {
+  if (!userMarker || e.alpha === null) return;
+  const angle = e.alpha;
+  if (!headingMarker) {
+    headingMarker = L.marker(userMarker.getLatLng(), {
+      icon: compassIcon,
+      zIndexOffset: 999,
+      interactive: false
+    }).addTo(map);
+  } else {
+    headingMarker.setLatLng(userMarker.getLatLng());
+    const el = headingMarker.getElement();
+    if (el) el.querySelector('.heading-wrap').style.transform = `rotate(${angle}deg)`;
+  }
+}, { passive: true });
+
+// ── CLIC DROIT : coordonnées ─────────────────────────────
+map.on('contextmenu', e => {
+  const { lat, lng } = e.latlng;
+  const [x, y] = wgs84ToL93(lat, lng);
+  const popup = L.popup({ className: 'coords-popup' })
+    .setLatLng(e.latlng)
+    .setContent(`
+      <b>📌 Coordonnées</b><br>
+      Lat : ${lat.toFixed(6)}<br>
+      Lon : ${lng.toFixed(6)}<br>
+      L93 : ${x.toFixed(0)} / ${y.toFixed(0)}<br>
+      <small style="color:rgba(200,169,110,0.6);cursor:pointer" onclick="navigator.clipboard.writeText('${lat.toFixed(6)}, ${lng.toFixed(6)}')">
+        📋 Copier lat/lon
+      </small>
+    `)
+    .openOn(map);
+});
+
+// ── ANIMATION CSS INLINE ─────────────────────────────────
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes locpulse {
+    0%   { transform: scale(1);   opacity: 0.8; }
+    100% { transform: scale(2.5); opacity: 0;   }
+  }
+`;
+document.head.appendChild(style);
+
+// ── PWA SERVICE WORKER ───────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(() => {}); // Silencieux si pas en HTTPS
+  });
+}
+
+// ── INIT ─────────────────────────────────────────────────
+loadPlans();
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
