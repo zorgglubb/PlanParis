@@ -3,9 +3,9 @@
     "annee": 1796,
     "titre": "Verniquet",
     "auteur": "Verniquet",
-    "source": "BnF",
+    "source": "Bnf",
     "url": "https://www.plansdeparis.fr/Paris/tuile/1796_Verniquet_Fnp_369A/{z}/{x}/{y}.png",
-    "attribution": "BnF – Verniquet 1796"
+    "attribution": "Bnf – Verniquet 1796"
   },
   {
     "annee": 1807,
@@ -19,9 +19,9 @@
     "annee": 1817,
     "titre": "Picquet",
     "auteur": "Picquet",
-    "source": "BmF",
+    "source": "Bnf",
     "url": "https://www.plansdeparis.fr/Paris/tuile/1817_Picquet_Paris_434A/{z}/{x}/{y}.png",
-    "attribution": "BmF – Picquet 1817"
+    "attribution": "Bnf – Picquet 1817"
   },
   {
     "annee": 1825,
@@ -35,9 +35,9 @@
     "annee": 1831,
     "titre": "Perrot",
     "auteur": "Perrot",
-    "source": "BnF",
+    "source": "Bnf",
     "url": "https://www.plansdeparis.fr/Paris/tuile/1831_perrot_Paris_482A/{z}/{x}/{y}.png",
-    "attribution": "BnF – Perrot 1831"
+    "attribution": "Bnf – Perrot 1831"
   },
   {
     "annee": 1836,
@@ -51,41 +51,41 @@
     "annee": 1842,
     "titre": "Renouard",
     "auteur": "Renouard",
-    "source": "BmF",
+    "source": "Bnf",
     "url": "https://www.plansdeparis.fr/Paris/tuile/1842_Renouard_Paris_544A/{z}/{x}/{y}.png",
-    "attribution": "BmF – Renouard 1842"
+    "attribution": "Bnf – Renouard 1842"
   },
   {
     "annee": 1854,
     "titre": "Malte",
     "auteur": "Malte",
-    "source": "BnF",
+    "source": "Bnf",
     "url": "https://www.plansdeparis.fr/Paris/tuile/1854ca_Malte_Paris_589C/{z}/{x}/{y}.png",
-    "attribution": "BnF – Malte 1854"
+    "attribution": "Bnf – Malte 1854"
   },
   {
     "annee": 1860,
     "titre": "Lebrun",
     "auteur": "Lebrun",
-    "source": "BnF",
+    "source": "Bnf",
     "url": "https://www.plansdeparis.fr/Paris/tuile/1860_lebrun_Paris_618B/{z}/{x}/{y}.png",
-    "attribution": "BnF – Lebrun 1860"
+    "attribution": "Bnf – Lebrun 1860"
   },
   {
     "annee": 1863,
     "titre": "Logerot",
     "auteur": "Logerot",
-    "source": "BmF",
+    "source": "Bnf",
     "url": "https://www.plansdeparis.fr/Paris/tuile/1863_Logerot_Paris_FMB_642D/{z}/{x}/{y}.png",
-    "attribution": "BmF – Logerot 1863"
+    "attribution": "Bnf – Logerot 1863"
   },
   {
     "annee": 1867,
     "titre": "Dumas-Vorzet",
     "auteur": "Dumas & Vorzet",
-    "source": "BmF",
+    "source": "Bnf",
     "url": "https://www.plansdeparis.fr/Paris/tuile/1867_Dumas_Vorzet_Paris_fmb_733A/{z}/{x}/{y}.png",
-    "attribution": "BmF – Dumas Vorzet 1867"
+    "attribution": "Bnf – Dumas Vorzet 1867"
   },
   {
     "annee": 1871,
@@ -99,9 +99,9 @@
     "annee": 1876,
     "titre": "Paris Diamant",
     "auteur": "Diamant",
-    "source": "BmF",
+    "source": "Bnf",
     "url": "https://www.plansdeparis.fr/Paris/tuile/1876_paris_diamant_FMB_734H/{z}/{x}/{y}.png",
-    "attribution": "BmF – Diamant 1876"
+    "attribution": "Bnf – Diamant 1876"
   },
   {
     "annee": 1900,
