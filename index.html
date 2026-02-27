@@ -166,7 +166,60 @@
     #controls-toggle.open { transform: rotate(45deg); }
     #controls-toggle:active { background: rgba(200,169,110,0.2); }
 
-    /* ── CONTRÔLES DU PLAN ACTIF — panneau vertical compact bas droite ── */
+    @keyframes slideUp {
+      from { transform: translateY(12px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    /* Slider de transparence VERTICAL */
+    .opacity-slider {
+      -webkit-appearance: slider-vertical;
+      writing-mode: vertical-lr;
+      direction: rtl;        /* haut = 100 (opaque), bas = 0 (transparent) */
+      width: 20px;
+      height: 80px;
+      cursor: pointer;
+      outline: none;
+      background: transparent;
+      flex-shrink: 0;
+    }
+
+    /* Track vertical */
+    .opacity-slider::-webkit-slider-runnable-track {
+      width: 4px;
+      border-radius: 2px;
+      background: rgba(200,169,110,0.2);
+    }
+
+    .opacity-slider::-moz-range-track {
+      width: 4px;
+      border-radius: 2px;
+      background: rgba(200,169,110,0.2);
+    }
+
+    .opacity-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid var(--sepia);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+      cursor: pointer;
+      margin-left: -6px;
+      transition: transform 0.15s;
+    }
+
+    .opacity-slider::-webkit-slider-thumb:active { transform: scale(1.3); }
+
+    .opacity-slider::-moz-range-thumb {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid var(--sepia);
+      cursor: pointer;
+    }
+
+    /* Layout panneau contrôles : slider vertical à gauche, toggles à droite */
     #plan-controls {
       position: absolute;
       bottom: 134px; right: 12px;
@@ -177,59 +230,36 @@
       padding: 10px 12px;
       backdrop-filter: blur(12px);
       display: none;
-      width: 170px;
+      width: auto;
     }
 
-    #plan-controls.visible {
-      display: block;
-      animation: slideUp 0.25s ease;
-    }
-
-    @keyframes slideUp {
-      from { transform: translateY(12px); opacity: 0; }
-      to   { transform: translateY(0);    opacity: 1; }
-    }
-
-    .ctrl-row {
+    #controls-inner {
       display: flex;
+      flex-direction: row;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 9px;
+      gap: 12px;
     }
 
-    .ctrl-row:last-child { margin-bottom: 0; }
+    #slider-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
 
-    .ctrl-label {
-      color: var(--gold);
-      font-size: 10px;
+    #toggles-col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .slider-end-label {
+      font-size: 9px;
+      color: rgba(200,169,110,0.5);
       font-style: italic;
-      letter-spacing: 0.3px;
-      white-space: nowrap;
+      text-align: center;
+      line-height: 1;
     }
-
-    /* Slider de transparence */
-    .opacity-slider {
-      flex: 1;
-      -webkit-appearance: none;
-      height: 3px;
-      border-radius: 2px;
-      background: linear-gradient(to right, var(--gold) 0%, var(--gold) var(--val, 100%), rgba(200,169,110,0.2) var(--val, 100%));
-      outline: none;
-      cursor: pointer;
-    }
-
-    .opacity-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: var(--gold);
-      border: 2px solid var(--sepia);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
-      cursor: pointer;
-      transition: transform 0.15s;
-    }
-
-    .opacity-slider::-webkit-slider-thumb:active { transform: scale(1.3); }
 
     /* Toggles couches */
     .layer-toggle {
@@ -624,27 +654,31 @@
 
 <!-- Contrôles plan actif — panneau vertical compact bas droite -->
 <div id="plan-controls">
-  <div class="ctrl-row">
-    <span class="ctrl-label">Transparence</span>
-    <input type="range" class="opacity-slider" id="opacity-slider" min="0" max="100" value="100">
-  </div>
-  <div class="ctrl-row">
-    <label class="layer-toggle">
-      <span class="toggle-switch">
-        <input type="checkbox" id="toggle-voirie">
-        <span class="slider-bg"></span>
-      </span>
-      <span class="toggle-label">Voirie historique</span>
-    </label>
-  </div>
-  <div class="ctrl-row">
-    <label class="layer-toggle">
-      <span class="toggle-switch">
-        <input type="checkbox" id="toggle-lieux">
-        <span class="slider-bg"></span>
-      </span>
-      <span class="toggle-label">Monuments & lieux</span>
-    </label>
+  <div id="controls-inner">
+    <!-- Slider vertical : haut = opaque, bas = transparent -->
+    <div id="slider-col">
+      <span class="slider-end-label">●</span>
+      <input type="range" class="opacity-slider" id="opacity-slider"
+             orient="vertical" min="0" max="100" value="100">
+      <span class="slider-end-label">○</span>
+    </div>
+    <!-- Toggles à droite -->
+    <div id="toggles-col">
+      <label class="layer-toggle">
+        <span class="toggle-switch">
+          <input type="checkbox" id="toggle-voirie">
+          <span class="slider-bg"></span>
+        </span>
+        <span class="toggle-label">Voirie</span>
+      </label>
+      <label class="layer-toggle">
+        <span class="toggle-switch">
+          <input type="checkbox" id="toggle-lieux">
+          <span class="slider-bg"></span>
+        </span>
+        <span class="toggle-label">Monuments</span>
+      </label>
+    </div>
   </div>
 </div>
 
@@ -883,16 +917,29 @@ function clearOverlays() {
 document.getElementById('nav-prev').addEventListener('click', () => selectPlan(currentIndex - 1));
 document.getElementById('nav-next').addEventListener('click', () => selectPlan(currentIndex + 1));
 
-// Swipe tactile sur la carte
+// Swipe tactile sur la carte — ignoré si pinch (2 doigts) ou mouvement vertical
 let touchStartX = 0;
+let touchStartY = 0;
+let touchIsMulti = false;
+
 document.getElementById('map').addEventListener('touchstart', e => {
+  touchIsMulti = e.touches.length > 1;
   touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
 }, { passive: true });
+
+document.getElementById('map').addEventListener('touchmove', e => {
+  if (e.touches.length > 1) touchIsMulti = true; // pinch détecté en cours
+}, { passive: true });
+
 document.getElementById('map').addEventListener('touchend', e => {
+  if (touchIsMulti) { touchIsMulti = false; return; } // ignorer pinch-zoom
   const dx = e.changedTouches[0].clientX - touchStartX;
-  if (Math.abs(dx) > 60) {
-    if (dx < 0) selectPlan(currentIndex + 1); // swipe gauche → suivant
-    else        selectPlan(currentIndex - 1); // swipe droit  → précédent
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  // Swipe valide : horizontal dominant (dx > dy*2) et distance suffisante (>80px)
+  if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 2) {
+    if (dx < 0) selectPlan(currentIndex + 1);
+    else        selectPlan(currentIndex - 1);
   }
 }, { passive: true });
 
