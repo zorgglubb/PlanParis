@@ -42,6 +42,10 @@
       background: var(--sepia);
     }
 
+    /* Fond des tuiles Leaflet en sépia pour éviter les zones bleues */
+    .leaflet-tile-pane { background: var(--sepia) !important; }
+    .leaflet-container { background: var(--sepia) !important; }
+
     /* ── TITRE FLOTTANT ── */
     #plan-title {
       position: absolute;
@@ -1082,6 +1086,9 @@ function selectPlan(idx) {
     minZoom: 10, maxZoom: 18,
     bounds: PARIS_BOUNDS,
     opacity: 0,
+    keepBuffer: 4,
+    updateWhenZooming: false,
+    updateWhenIdle: false,
     errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
   });
   activePlanLayer.addTo(map).bringToFront();
