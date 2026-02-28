@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Plans de la Ville de Paris</title>
-  <meta name="theme-color" content="#4a3929"/>
+  <meta name="theme-color" content="#564c4c"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"/>
@@ -126,7 +126,7 @@
     .year-sub {
       display: block;
       font-size: 9px;
-      color: rgba(200,169,110,0.55);
+      color: rgba(230,210,160,0.85);
       font-style: italic;
       margin-top: 2px;
       white-space: nowrap;
@@ -135,17 +135,90 @@
       max-width: 70px;
     }
 
-    /* ── BOUTON OUVRIR/FERMER CONTRÔLES (bas droite) ── */
-    #controls-toggle {
+    /* ── BOUTON DESCRIPTION ── */
+    #desc-toggle {
       position: absolute;
-      bottom: 88px; right: 12px;
       z-index: 1001;
       background: var(--panel-bg);
       border: 1px solid var(--panel-border);
       color: var(--gold);
       border-radius: 50%;
       width: 38px; height: 38px;
-      display: none;   /* visible seulement quand plan actif */
+      display: none;
+      align-items: center; justify-content: center;
+      font-size: 17px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #desc-toggle.visible { display: flex; }
+    #desc-toggle:active  { background: rgba(200,169,110,0.2); }
+
+    /* ── PANNEAU DESCRIPTION ── */
+    #desc-panel {
+      position: absolute;
+      z-index: 1002;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      width: 260px;
+      max-height: 300px;
+      overflow-y: auto;
+      backdrop-filter: blur(14px);
+      display: none;
+      scrollbar-width: thin;
+      scrollbar-color: var(--gold) transparent;
+    }
+
+    #desc-panel.visible {
+      display: block;
+      animation: slideUp 0.25s ease;
+    }
+
+    #desc-panel h3 {
+      font-family: 'IM Fell English', serif;
+      font-size: 15px;
+      color: var(--gold);
+      margin: 0 0 8px 0;
+      border-bottom: 1px solid rgba(200,169,110,0.2);
+      padding-bottom: 6px;
+    }
+
+    #desc-panel p {
+      font-family: 'Spectral', serif;
+      font-size: 12px;
+      color: rgba(230,210,160,0.9);
+      line-height: 1.6;
+      margin: 0;
+      font-style: italic;
+    }
+
+    #desc-panel .desc-meta {
+      font-size: 11px;
+      color: rgba(200,169,110,0.6);
+      margin-top: 10px;
+      font-style: normal;
+    }
+    /* ── BOUTON DESCRIPTION (au-dessus de ⚙) ── */
+    #desc-toggle { bottom: 136px; right: 10px; display: none !important; }
+
+    /* ── PANNEAU DESCRIPTION (s'ouvre à gauche du bouton ℹ) ── */
+    #desc-panel  { bottom: 136px; right: 56px; }
+
+    /* ── BOUTON RÉGLAGES ── */
+    #controls-toggle {
+      position: absolute;
+      bottom: 90px; right: 10px;
+      z-index: 1001;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--gold);
+      border-radius: 50%;
+      width: 38px; height: 38px;
+      display: none;
       align-items: center; justify-content: center;
       font-size: 16px;
       cursor: pointer;
@@ -231,7 +304,7 @@
     /* Layout panneau contrôles */
     #plan-controls {
       position: absolute;
-      bottom: 90px; right: 10px;
+      bottom: 90px; right: 56px;
       z-index: 1002;
       background: var(--panel-bg);
       border: 1px solid var(--panel-border);
@@ -258,35 +331,6 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-    }
-
-    /* ── BOUTON ⚙ CONTRÔLES ── */
-    #controls-toggle {
-      position: absolute;
-      bottom: 90px; right: 10px;
-      z-index: 1001;
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      color: var(--gold);
-      border-radius: 50%;
-      width: 38px; height: 38px;
-      display: none;
-      align-items: center; justify-content: center;
-      font-size: 16px;
-      cursor: pointer;
-      backdrop-filter: blur(8px);
-      transition: background 0.2s, transform 0.25s;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    #controls-toggle.visible { display: flex; }
-    #controls-toggle.open { transform: rotate(45deg); }
-    #controls-toggle:active { background: rgba(200,169,110,0.2); }
-
-    #plan-controls.visible {
-      /* quand ouvert, décaler à gauche du bouton ⚙ */
-      right: 56px;
-      bottom: 58px;
     }
 
 
@@ -793,6 +837,16 @@
   <div id="timeline-scroll"></div>
 </div>
 
+<!-- Bouton description (au-dessus de ⚙) -->
+<button id="desc-toggle" title="Description du plan">ℹ</button>
+
+<!-- Panneau description -->
+<div id="desc-panel">
+  <h3 id="desc-title">—</h3>
+  <p id="desc-text">Sélectionnez un plan pour voir sa description.</p>
+  <div class="desc-meta" id="desc-meta"></div>
+</div>
+
 <!-- Bouton ouvrir/fermer les contrôles (bas droite) -->
 <button id="controls-toggle" title="Réglages">⚙</button>
 
@@ -1044,8 +1098,24 @@ function selectPlan(idx) {
   document.getElementById('plan-title').textContent =
     `${plan.annee} — ${plan.titre} (${plan.source})`;
 
-  // Afficher le bouton ⚙ (mais pas le panneau lui-même)
+  // Réinitialiser les toggles visuellement
+  document.getElementById('toggle-voirie').checked = false;
+  document.getElementById('toggle-lieux').checked  = false;
+
+  // Fermer les panneaux ouverts
+  document.getElementById('plan-controls').classList.remove('visible');
+  document.getElementById('ctrlToggle') && document.getElementById('controls-toggle').classList.remove('open');
+  document.getElementById('desc-panel').classList.remove('visible');
+
+  // Afficher uniquement le bouton ⚙ (description désactivée pour l'instant)
   document.getElementById('controls-toggle').classList.add('visible');
+  // document.getElementById('desc-toggle').classList.add('visible'); // à activer plus tard
+
+  // Mettre à jour la description
+  document.getElementById('desc-title').textContent = `${plan.annee} — ${plan.titre}`;
+  document.getElementById('desc-text').textContent  = plan.description || 'Description non disponible.';
+  document.getElementById('desc-meta').textContent  = `Auteur : ${plan.auteur || '—'} · Source : ${plan.source || '—'}`;
+
   document.getElementById('swipe-hint') && (document.getElementById('swipe-hint').style.display = 'none');
 
   // Boutons nav
@@ -1080,6 +1150,18 @@ ctrlToggle.addEventListener('click', () => {
   const isOpen = panel.classList.contains('visible');
   panel.classList.toggle('visible', !isOpen);
   ctrlToggle.classList.toggle('open', !isOpen);
+  // Fermer desc si ouvert
+  document.getElementById('desc-panel').classList.remove('visible');
+});
+
+// ── BOUTON ℹ DESCRIPTION ─────────────────────────────────
+document.getElementById('desc-toggle').addEventListener('click', () => {
+  const panel = document.getElementById('desc-panel');
+  const isOpen = panel.classList.contains('visible');
+  panel.classList.toggle('visible', !isOpen);
+  // Fermer réglages si ouvert
+  document.getElementById('plan-controls').classList.remove('visible');
+  ctrlToggle.classList.remove('open');
 });
 
 // ── SLIDER VERTICAL CUSTOM ───────────────────────────────
